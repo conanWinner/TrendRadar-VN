@@ -46,7 +46,7 @@ AI và gửi thông báo mặc định bị tắt trong giao diện. Việc nh�
 ### Cài đặt
 
 ```bash
-git clone https://github.com/conanWinner/TrendRadar.git
+git clone https://github.com/conanWinner/TrendRadar-VN.git
 cd TrendRadar
 uv sync --locked
 ```
@@ -197,7 +197,7 @@ TrendRadar/
 ## Nguồn gốc và giấy phép
 
 - Upstream: [sansan0/TrendRadar](https://github.com/sansan0/TrendRadar)
-- Bản tùy biến: [conanWinner/TrendRadar](https://github.com/conanWinner/TrendRadar)
+- Bản tùy biến: [conanWinner/TrendRadar-VN](https://github.com/conanWinner/TrendRadar-VN)
 - Giấy phép: [GPL-3.0](LICENSE)
 
 Khi tái sử dụng hoặc phân phối bản sửa đổi, hãy giữ thông tin bản quyền, giấy phép và ghi nhận dự án upstream theo GPL-3.0.
