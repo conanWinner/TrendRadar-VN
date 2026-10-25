@@ -1,0 +1,294 @@
+# ═══════════════════════════════════════════════════════════════
+# Tệp từ khóa theo dõi TrendRadar
+#                         Version: 1.1.0
+# ═══════════════════════════════════════════════════════════════
+
+# Trình chỉnh sửa trực quan: https://sansan0.github.io/TrendRadar/
+#
+# Các dòng bắt đầu bằng # là hướng dẫn, không phải quy tắc lọc.
+#
+# Tệp này đặt các từ khóa tin tức bạn quan tâm.
+# Hệ thống tìm tin nổi bật có tiêu đề khớp các từ khóa này.
+#
+# Tệp gồm hai phần:
+# [GLOBAL_FILTER] — Loại bỏ nội dung không muốn xem.
+# [WORD_GROUPS] — Các nhóm từ khóa cần theo dõi.
+#
+# ═══════════════════════════════════════════════════════════════
+
+
+# ───────────────────────────────────────────────────────────────
+# Từ khóa loại trừ chung
+# ───────────────────────────────────────────────────────────────
+# Nhập mỗi từ cần loại bỏ trên một dòng.
+# Tin chứa những từ này sẽ bị loại khỏi kết quả lọc.
+#
+# Cách sử dụng:
+# cờ bạc            Loại tiêu đề có chứa từ này.
+# cá cược           Muốn loại thêm từ khác, nhập trên dòng riêng.
+# Phần [GLOBAL_FILTER] chỉ khớp chuỗi ký tự, không hỗ trợ /biểu thức/ hoặc => tên hiển thị.
+
+[GLOBAL_FILTER]
+# Loại tiêu đề giật gân (giữ từ gốc để khớp nguồn tiếng Trung).
+
+
+
+# ───────────────────────────────────────────────────────────────
+# Nhóm từ khóa theo dõi
+# ───────────────────────────────────────────────────────────────
+# Nhập các từ khóa bạn quan tâm tại đây.
+# Các nhóm cách nhau bằng dòng trống; chỉ cần khớp một từ trong nhóm.
+#
+# ┌─────────────────────────────────────────────────────────────┐
+# │ Tổng quan cú pháp — tham khảo nhanh │
+# └─────────────────────────────────────────────────────────────┘
+#
+# Cú pháp từ khóa:
+# Từ khóa            Khớp khi tiêu đề có chứa từ.
+# /biểu thức/        Khớp bằng biểu thức tìm kiếm, không phân biệt hoa thường.
+# Từ khóa => Tên     Đặt tên hiển thị cho từ khóa.
+# [Tên nhóm]         Dòng đầu tiên để đặt tên cho cả nhóm.
+# +Từ khóa           Bắt buộc tiêu đề khớp tất cả các từ có dấu +.
+# !Từ khóa           Loại mọi tin khớp từ này, áp dụng cho tất cả nhóm.
+# @Số                Giới hạn số tin hiển thị của nhóm.
+#
+# Thứ tự chọn tên hiển thị:
+# 1. Có tên nhóm: dùng tên nhóm.
+# 2. Có tên riêng: nối các tên bằng " / ".
+# 3. Không có tên riêng: hiển thị từ khóa gốc.
+#
+#
+# ┌─────────────────────────────────────────────────────────────┐
+# │ Cách dùng cơ bản — phù hợp người mới │
+# └─────────────────────────────────────────────────────────────┘
+#
+# 1. Đơn giản nhất: nhập trực tiếp từ khóa.
+#    ────────────────────
+# Huawei
+#
+# Kết quả: khớp tiêu đề có chứa "Huawei".
+#
+#
+# 2. Gộp nhiều từ khóa thành một nhóm.
+#    ────────────────────
+# Huawei
+# HarmonyOS
+# Nhậm Chính Phi
+#
+# Kết quả: khớp "Huawei", "HarmonyOS" hoặc "Nhậm Chính Phi"; hiển thị chung một nhóm.
+#
+#
+# 3. Đặt tên cho nhóm (khuyên dùng).
+#    ────────────────────
+# [Huawei]
+# Huawei
+# HarmonyOS
+# Nhậm Chính Phi
+#
+# Kết quả tương tự, nhưng tên hiển thị chỉ là "Huawei".
+#
+#
+# ┌─────────────────────────────────────────────────────────────┐
+# │ Cách dùng nâng cao — tùy chọn │
+# └─────────────────────────────────────────────────────────────┘
+#
+# 4. Khớp nhiều từ trong một dòng bằng biểu thức tìm kiếm.
+#    ────────────────────
+# /Huawei|HarmonyOS|Nhậm Chính Phi/ => Huawei
+#
+# Kết quả: khớp một trong ba từ và hiển thị tên "Huawei".
+# Trong /.../, ngăn các từ bằng |; phần sau => là tên hiển thị.
+#
+# Có thể nhờ AI giải thích biểu thức tìm kiếm:
+# "Viết biểu thức khớp văn bản chứa Huawei, HarmonyOS hoặc Nhậm Chính Phi;
+# định dạng: /biểu thức/ => Tên hiển thị."
+#
+#
+# 5. Khớp chính xác từ tiếng Anh để tránh khớp nhầm.
+#    ────────────────────
+#    /\bAI\b/i => AI
+#
+# \b là ranh giới từ, giúp không khớp "AI" trong "MAIL".
+# /i bỏ qua hoa thường: "ai", "AI" và "Ai" đều khớp.
+#
+# Có thể nhờ AI giải thích biểu thức tìm kiếm:
+# "Viết biểu thức khớp chính xác từ AI, không khớp AI trong MAIL;
+# bỏ qua hoa thường; định dạng: /biểu thức/i => Tên hiển thị."
+#
+#
+# 6. Loại bỏ nội dung cụ thể.
+#    ────────────────────
+# [Công ty Apple]
+# Apple
+# !trái cây
+# !vườn cây
+#
+# Kết quả: theo dõi "Apple"; mọi nhóm đều loại tin chứa "trái cây" hoặc "vườn cây".
+# Dấu ! phía trước từ khóa loại bỏ tin trên toàn bộ nhóm theo dõi.
+#
+#
+# 7. Giới hạn số lượng tin hiển thị.
+#    ────────────────────
+# [Tin công nghệ]
+# Công nghệ
+#    @5
+#
+# Kết quả: hiển thị tối đa 5 tin khớp nhóm.
+# @Số đặt giới hạn số tin.
+#
+#
+# 8. Bắt buộc cùng chứa nhiều từ.
+#    ────────────────────
+# +Apple
+# +ra mắt
+#
+# Kết quả: phải cùng chứa "Apple" và "ra mắt".
+# Dấu + phía trước từ khóa có nghĩa là bắt buộc chứa từ đó.
+#
+# ───────────────────────────────────────────────────────────────
+
+[WORD_GROUPS]
+
+# ═══════════════════════════════════════════════════════════════
+# Doanh nghiệp và thương hiệu
+# ═══════════════════════════════════════════════════════════════
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/qwen|minimax|glm/ => Mô hình mã nguồn mở Trung Quốc
+
+
+
+
+
+
+
+/\bOpenAI\b|\bChatGPT\b|\bSora\b|\bDALL-E\b|\bSam Altman\b|\bGreg Brockman\b/ => OpenAI
+/\bAnthropic\b|\bClaude\b|\bDario Amodei\b/ => Claude
+
+
+# ═══════════════════════════════════════════════════════════════
+# Quốc gia và khu vực
+# ═══════════════════════════════════════════════════════════════
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ═══════════════════════════════════════════════════════════════
+# Lĩnh vực công nghệ
+# ═══════════════════════════════════════════════════════════════
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Công nghệ mới
+
+# Chính sách công nghiệp
+
+[Công nghệ]
+công nghệ
+technology
+phần mềm
+software
+chip
+bán dẫn
+semiconductor
+smartphone
+
+[AI]
+trí tuệ nhân tạo
+artificial intelligence
+machine learning
+học máy
+LLM
+generative AI
+OpenAI
+Gemini
+Claude
+
+[Robotics]
+robot
+robotics
+người máy
+tự động hóa
+automation
+humanoid
+cánh tay robot
+ROS 2
+
+[Bóng đá]
+bóng đá
+football
+soccer
+V-League
+V.League
+Premier League
+Champions League
+World Cup
+tuyển Việt Nam
+
+[Thể thao]
+thể thao
+sports
+bóng đá
+bóng rổ
+tennis
+cầu lông
+badminton
+bóng chuyền
+volleyball
+Olympic
+
+[Bóng rổ]
+bóng rổ
+basketball
+NBA
+WNBA
+VBA
+EuroLeague
+FIBA

@@ -1,0 +1,559 @@
+# ═══════════════════════════════════════════════════════════════
+# Lịch xử lý tin TrendRadar
+#                      Version: 1.2.0
+# ═══════════════════════════════════════════════════════════════
+#
+# Tệp này quyết định xử lý việc gì trong từng khung giờ.
+#
+# Đa số người dùng chỉ cần chọn chế độ có sẵn.
+# Chọn chế độ bằng schedule.preset trong config.yaml:
+#
+#   schedule:
+#     preset: "morning_evening"    ← Đổi mã chế độ tại đây.
+#
+#
+# Trình chỉnh sửa trực quan: https://sansan0.github.io/TrendRadar/
+#
+#
+# ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+# Khái niệm cơ bản để đọc lịch xử lý
+# ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+#
+#
+# Ứng dụng chạy như thế nào?
+#
+# Các tác vụ định kỳ gọi TrendRadar để thực hiện từng lượt:
+#
+# GitHub Actions: lịch cron trong .github/workflows/crawler.yml.
+# Ví dụ: một lượt mỗi giờ, vào phút 33.
+#
+# Docker: lịch CRON_SCHEDULE trong docker/.env.
+# Ví dụ: một lượt mỗi 30 phút.
+#
+# Mỗi lượt có thể thực hiện ba bước theo thứ tự:
+#
+# 1. Thu thập (collect)
+# Lấy dữ liệu từ bảng tin thịnh hành và nguồn báo RSS, lưu vào cơ sở dữ liệu.
+#
+#                  ⬇
+#
+# 2. Phân tích (analyze)
+# Phân tích tin bằng AI, tùy chọn; cần khóa kết nối dịch vụ và có thể phát sinh phí.
+#
+#                  ⬇
+#
+# 3. Gửi thông báo (push)
+# Gửi tin đã tổng hợp và kết quả phân tích đến kênh thông báo.
+# Ví dụ: Feishu, DingTalk, Telegram hoặc email.
+#
+# Có thể bật/tắt riêng từng bước. Tệp này quyết định:
+# Trong mỗi khung giờ, bước nào được bật hoặc tắt.
+#
+#
+# Quan hệ giữa công tắc tổng trong config.yaml và lịch xử lý
+#
+# Công tắc tổng có ưu tiên cao hơn các thiết lập trong tệp này:
+#
+# platforms.enabled: false    → Không lấy bảng tin thịnh hành.
+# rss.enabled: false          → Không lấy tin từ nguồn RSS.
+# notification.enabled: false → Không gửi thông báo.
+# ai_analysis.enabled: false  → Không phân tích bằng AI.
+#
+# Công tắc theo khung giờ chỉ có tác dụng khi công tắc tổng đã bật.
+# Công tắc tổng quyết định có được làm; lịch quyết định lúc nào làm.
+#
+#
+# Khung giờ và khoảng ngoài khung giờ là gì?
+#
+# Mỗi ngày có thể chia thành nhiều khung giờ xử lý.
+# Mỗi khung giờ có công tắc thu thập, phân tích và gửi riêng.
+#
+# Thời điểm ngoài mọi khung giờ dùng thiết lập mặc định (default).
+# Có thể tiếp tục thu thập ngoài khung giờ để tích lũy dữ liệu,
+# nhờ đó lần tổng hợp sau có đủ dữ liệu đã thu thập.
+#
+#
+# Tích lũy qua nhiều lượt giúp giữ thêm diễn biến xếp hạng và thời gian xuất hiện.
+# Dữ liệu tích lũy có thể bổ sung ngữ cảnh cho phân tích AI.
+# Dữ liệu cả ngày giúp theo dõi diễn biến qua nhiều thời điểm.
+#
+#
+# ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+# Các chế độ có sẵn — chọn một chế độ
+# ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+#
+# 1. always_on: theo dõi cả ngày, gửi khi có tin mới.
+# 2. morning_evening: gửi cả ngày và tổng hợp buổi tối.
+# 3. office_hours: điểm tin đầu giờ, buổi trưa và cuối giờ làm việc.
+# 4. night_owl: điểm tin buổi chiều và tổng hợp đêm khuya.
+# 5. custom: tự đặt khung giờ ở phần custom cuối tệp.
+#
+# Có hai cách tùy chỉnh:
+# 1. Sửa phần custom ở cuối tệp.
+# 2. Thêm chế độ mới trong presets.
+# Dùng mã chế độ không trùng và chọn mã đó trong config.yaml.
+#
+# Gợi ý về khung giờ xử lý:
+# Với GitHub Actions, nên chừa khoảng đủ rộng vì tác vụ định kỳ có thể chạy trễ.
+# Với Docker, điều chỉnh cron theo nhu cầu và kiểm tra lịch thực tế.
+#
+#
+# ═══════════════════════════════════════════════════════════════
+
+
+# ───────────────────────────────────────────────────────────────
+# Các chế độ có sẵn
+# ───────────────────────────────────────────────────────────────
+presets:
+
+  # ───────────────────────────────────────────────────────────
+  # 1. always_on — Theo dõi cả ngày
+  #
+  # Thu thập và gửi cả ngày; có nội dung mới thì thông báo.
+  # Không chia khung giờ; cả ngày dùng cùng một thiết lập.
+  # Phù hợp theo dõi thường xuyên.
+  #
+  # Cả ngày: gửi bật, AI tắt, không giới hạn số lần gửi.
+  # ───────────────────────────────────────────────────────────
+  always_on:
+    name: "Theo dõi cả ngày"
+    description: "Theo dõi cả ngày, gửi ngay khi có tin mới. Phù hợp người theo dõi thường xuyên."
+
+    # Thiết lập mặc định dùng khi không nằm trong khung giờ nào.
+    # Chế độ này không chia khung giờ nên default áp dụng cả ngày.
+    default:
+      collect: true                # Thu thập dữ liệu từ bảng tin thịnh hành và RSS.
+      analyze: false               # Tắt phân tích AI để tiết kiệm phí dịch vụ.
+      ai_mode: "current"           # AI phân tích bảng tin hiện tại.
+      push: true                   # Có nội dung mới thì gửi.
+      report_mode: "incremental"   # Chỉ gửi nội dung mới để giảm lặp lại.
+      once:                        # Giới hạn mỗi khung giờ chỉ thực hiện một lần.
+        analyze: false             # Không giới hạn số lần phân tích.
+        push: false                # Không giới hạn số lần gửi.
+
+    # Không đặt khung giờ; cả ngày dùng default.
+    #
+    # {} là cấu trúc rỗng trong YAML.
+    # [] là danh sách rỗng.
+    periods: {}
+    day_plans:
+      all_day:
+        periods: []                   # Danh sách rỗng: ngày này không kích hoạt khung giờ nào.
+    week_map:
+      1: "all_day"                 # Thứ Hai
+      2: "all_day"                 # Thứ Ba
+      3: "all_day"                 # Thứ Tư
+      4: "all_day"                 # Thứ Năm
+      5: "all_day"                 # Thứ Sáu
+      6: "all_day"                 # Thứ Bảy
+      7: "all_day"                 # Chủ nhật
+
+
+  # ───────────────────────────────────────────────────────────
+  # 2. morning_evening — Tổng hợp sáng và tối
+  #
+  # Gửi tin hiện tại trong ngày và tổng hợp cả ngày vào buổi tối.
+  # Phù hợp đa số người dùng.
+  #
+  # Mặc định cả ngày: gửi bật, AI bật, không giới hạn số lần gửi.
+  # Buổi tối: chỉ phân tích và gửi một lần trong khung giờ.
+  # ───────────────────────────────────────────────────────────
+  morning_evening:
+    name: "Tổng hợp sáng và tối"
+    description: "Gửi tin cả ngày và tổng hợp vào buổi tối. Phù hợp đa số người dùng."
+
+    # Thiết lập dùng khi không khớp khung giờ nào.
+    default:
+      collect: true                # Luôn thu thập dữ liệu.
+      analyze: true                # AI phân tích bảng tin hiện tại.
+      ai_mode: "current"           # AI phân tích bảng tin hiện tại.
+      push: true                   # Mỗi lượt gửi các tin hiện có trên bảng tin.
+      report_mode: "current"       # Các tin hiện có trên bảng tin.
+      # frequency_file: "xxx.txt"     # Tệp từ khóa tùy chọn trong config/custom/keyword/.
+      # interests_file: "xxx.txt"     # Tệp chủ đề AI tùy chọn trong config/custom/ai/.
+      # filter_method: "keyword"     # keyword hoặc ai; bỏ trống để dùng filter.method chung.
+      once:
+        analyze: false             # Không giới hạn số lần phân tích.
+        push: false                # Không giới hạn số lần gửi.
+
+    # Chỉ khung giờ tổng hợp buổi tối cần thiết lập riêng.
+    periods:
+      evening_summary:
+        name: "Tổng hợp buổi tối"
+        start: "20:00"
+        end: "22:00"
+        # frequency_file: "xxx.txt"     # Tệp từ khóa tùy chọn trong config/custom/keyword/.
+        # interests_file: "xxx.txt"     # Tệp chủ đề AI tùy chọn trong config/custom/ai/.
+        # filter_method: "keyword"     # keyword hoặc ai; bỏ trống để dùng filter.method chung.
+        analyze: true              # Phân tích AI vào buổi tối.
+        ai_mode: "daily"           # AI tổng hợp nội dung cả ngày.
+        report_mode: "daily"       # Chuyển sang tổng hợp toàn bộ tin trong ngày.
+        once:
+          analyze: true            # Chỉ phân tích một lần trong khung giờ.
+          push: true               # Chỉ gửi một lần trong khung giờ.
+
+    # Lịch ngày: ghép các khung giờ thành lịch của một ngày.
+    day_plans:
+      all_day:
+        periods: ["evening_summary"]
+
+    # Lịch tuần: chọn lịch ngày cho từng thứ, 1=Thứ Hai đến 7=Chủ nhật.
+    week_map:
+      1: "all_day"
+      2: "all_day"
+      3: "all_day"
+      4: "all_day"
+      5: "all_day"
+      6: "all_day"
+      7: "all_day"
+
+
+  # ───────────────────────────────────────────────────────────
+  # 3. office_hours — Giờ làm việc
+  #
+  # Ngày thường gửi ba khung giờ; cuối tuần gửi nội dung mới linh hoạt.
+  # Phù hợp người làm việc giờ hành chính.
+  #
+  # Ngoài khung giờ: tắt gửi và tắt AI.
+  # Đầu giờ: bật gửi và AI, chỉ gửi một lần.
+  # Buổi trưa: bật gửi, tắt AI, chỉ gửi một lần.
+  # Cuối giờ: bật gửi và AI, chỉ gửi một lần.
+  # Cuối tuần: bật gửi, tắt AI, không giới hạn số lần gửi.
+  # ───────────────────────────────────────────────────────────
+  office_hours:
+    name: "Giờ làm việc"
+    description: "Ngày thường gửi ba lần (đầu giờ, buổi trưa, cuối giờ); cuối tuần gửi tin mới linh hoạt."
+
+    default:
+      collect: true
+      analyze: false
+      ai_mode: "current"
+      push: false                  # Mặc định không gửi thông báo.
+      report_mode: "current"
+      once:
+        analyze: true              # Chỉ phân tích một lần trong mỗi khung giờ.
+        push: true                 # Chỉ gửi một lần trong mỗi khung giờ.
+
+    periods:
+      morning_briefing:
+        name: "Điểm tin đầu giờ"
+        start: "09:00"
+        end: "11:00"
+        analyze: true              # AI phân tích các tin hiện tại.
+        ai_mode: "current"         # AI phân tích bảng tin hiện tại.
+        push: true                 # Điểm tin hiện tại khi bắt đầu làm việc.
+        report_mode: "current"     # Các tin hiện có trên bảng tin.
+        # once kế thừa default: chỉ phân tích và gửi một lần.
+
+      noon_update:
+        name: "Tin nổi bật buổi trưa"
+        start: "13:00"
+        end: "15:00"
+        push: true                 # Buổi trưa gửi các tin hiện tại.
+        report_mode: "current"     # Các tin hiện có trên bảng tin.
+        # analyze kế thừa false từ default: không phân tích AI buổi trưa.
+        # once kế thừa push: true từ default: chỉ gửi một lần.
+
+      closing_summary:
+        name: "Tổng hợp cuối giờ"
+        start: "17:00"
+        end: "19:00"
+        analyze: true              # AI phân tích tổng hợp cả ngày.
+        ai_mode: "daily"           # AI phân tích nội dung cả ngày.
+        push: true                 # Gửi tổng hợp cả ngày trước khi kết thúc giờ làm việc.
+        report_mode: "daily"       # Tổng hợp toàn bộ tin trong ngày.
+        # once kế thừa default: chỉ phân tích và gửi một lần.
+
+      weekend_free:
+        name: "Cuối tuần linh hoạt"
+        start: "08:00"
+        end: "23:00"
+        ai_mode: "current"         # AI phân tích bảng tin hiện tại.
+        push: true                 # Có nội dung mới thì gửi.
+        report_mode: "incremental" # Chế độ tăng thêm: chỉ gửi nếu có nội dung mới.
+        once:
+          analyze: false           # Không giới hạn số lần phân tích.
+          push: false              # Không giới hạn số lần gửi.
+
+    # Ngày thường dùng ba khung giờ; cuối tuần gửi tin mới linh hoạt.
+    day_plans:
+      workday:
+        periods: ["morning_briefing", "noon_update", "closing_summary"]
+      weekend:
+        periods: ["weekend_free"]  # Cuối tuần gửi tin mới trong khung giờ thức.
+
+    week_map:
+      1: "workday"                 # Thứ Hai dùng lịch ngày làm việc.
+      2: "workday"
+      3: "workday"
+      4: "workday"
+      5: "workday"
+      6: "weekend"                 # Thứ Bảy dùng lịch cuối tuần.
+      7: "weekend"                 # Chủ nhật dùng lịch cuối tuần.
+
+
+  # ───────────────────────────────────────────────────────────
+  # 4. night_owl — Làm việc khuya
+  #
+  # Ban ngày không gửi; buổi chiều và đêm khuya mỗi khung gửi một lần.
+  # Phù hợp người làm việc ban đêm hoặc khác múi giờ.
+  #
+  # Mặc định ban ngày: tắt gửi và tắt AI.
+  # Buổi chiều: bật gửi và AI, chỉ gửi một lần.
+  # Đêm khuya: bật gửi và AI, chỉ gửi một lần.
+  # ───────────────────────────────────────────────────────────
+  night_owl:
+    name: "Chế độ làm việc khuya"
+    description: "Điểm tin buổi chiều và tổng hợp cả ngày vào đêm khuya. Phù hợp người làm việc ban đêm hoặc khác múi giờ."
+
+    default:
+      collect: true
+      analyze: false
+      ai_mode: "current"
+      push: false
+      report_mode: "current"
+      once:
+        analyze: true              # Chỉ phân tích một lần trong mỗi khung giờ.
+        push: true                 # Chỉ gửi một lần trong mỗi khung giờ.
+
+    periods:
+      afternoon_peek:
+        name: "Điểm tin buổi chiều"
+        start: "15:00"
+        end: "17:00"
+        analyze: true              # AI phân tích các tin hiện tại.
+        ai_mode: "current"         # AI phân tích bảng tin hiện tại.
+        push: true                 # Buổi chiều xem các tin hiện tại.
+        report_mode: "current"     # Các tin hiện có trên bảng tin.
+        # once kế thừa default: chỉ phân tích và gửi một lần.
+
+      late_night:
+        name: "Tổng hợp đêm khuya"
+        start: "22:00"
+        end: "01:00"               # start lớn hơn end: khung giờ kéo dài qua nửa đêm.
+        analyze: true              # AI phân tích tổng hợp cả ngày.
+        ai_mode: "daily"           # AI phân tích nội dung cả ngày.
+        push: true                 # Đêm khuya gửi tổng hợp cả ngày.
+        report_mode: "daily"       # Tổng hợp toàn bộ tin trong ngày.
+        # once kế thừa default: chỉ phân tích và gửi một lần.
+
+    day_plans:
+      all_day:
+        periods: ["afternoon_peek", "late_night"]
+    week_map:
+      1: "all_day"
+      2: "all_day"
+      3: "all_day"
+      4: "all_day"
+      5: "all_day"
+      6: "all_day"
+      7: "all_day"
+
+
+# ═══════════════════════════════════════════════════════════════
+#
+# 5. Chế độ tùy chỉnh
+#
+# Khi config.yaml đặt schedule.preset: "custom",
+# hệ thống đọc phần thiết lập dưới đây.
+#
+# Tự điều chỉnh tại đây nếu các chế độ có sẵn chưa phù hợp.
+#
+# ═══════════════════════════════════════════════════════════════
+#
+# Cách tùy chỉnh gồm ba bước:
+#
+# Bước 1: định nghĩa các khung giờ (periods).
+# Mỗi khung gồm khoảng thời gian và các bước cần thực hiện.
+# Ví dụ: gửi buổi sáng 08–10 giờ, tổng hợp tối 19–21 giờ.
+#
+# Bước 2: ghép thành lịch ngày (day_plans).
+# Kết hợp các khung giờ để tạo lịch của một ngày.
+# Ví dụ: ngày thường dùng sáng và tối; cuối tuần chỉ dùng tối.
+#
+# Bước 3: gán lịch ngày cho từng thứ (week_map).
+# Chọn lịch ngày tương ứng từ Thứ Hai đến Chủ nhật.
+# Ví dụ: Thứ Hai đến Thứ Sáu dùng workday, cuối tuần dùng weekend.
+#
+# Phần default chứa các thiết lập mặc định.
+# Thời điểm không thuộc khung giờ nào dùng default.
+# Trường không khai báo trong khung giờ kế thừa từ default.
+#
+#
+# Ví dụ đầy đủ dưới đây dùng lịch khác nhau cho ngày thường và cuối tuần:
+#
+# Khung giờ ngày thường:
+# Yên lặng 23:00–06:00 hôm sau: thu thập và phân tích, không gửi.
+# Buổi sáng ngày thường 08:00–10:00: gửi nội dung mới.
+# Buổi tối 19:00–21:00: phân tích và gửi tổng hợp cả ngày.
+# Thời gian còn lại dùng default: thu thập, không gửi.
+#
+# Khung giờ cuối tuần:
+# Yên lặng 23:00–06:00 hôm sau: thu thập và phân tích, không gửi.
+# Buổi sáng cuối tuần 10:00–12:00: gửi tổng hợp trong ngày.
+# Buổi tối 19:00–21:00: phân tích và gửi tổng hợp cả ngày.
+# Thời gian còn lại dùng default: thu thập, không gửi.
+
+custom:
+  name: "Tùy chỉnh"
+  description: "Tự đặt khung giờ, lịch ngày và lịch tuần."
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Thiết lập mặc định
+  #
+  # Dùng khi thời điểm hiện tại không thuộc khung giờ nào.
+  # Các trường không khai báo trong khung giờ kế thừa từ đây.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  default:
+    collect: true                  # Có thu thập dữ liệu từ bảng tin thịnh hành và RSS hay không.
+    analyze: false                 # Có phân tích bằng AI hay không.
+    ai_mode: "current"            # Chế độ phân tích AI:
+                                   # follow_report → Theo chế độ báo cáo report_mode.
+                                   # daily         → Tổng hợp cả ngày.
+                                   # current       → Phân tích bảng tin hiện tại.
+                                   # incremental   → Phân tích nội dung mới.
+    push: false                    # Có gửi thông báo hay không.
+    report_mode: "current"         # Chế độ báo cáo:
+                                   # daily       → Tổng hợp mọi tin trong ngày.
+                                   # current     → Các tin hiện có trên bảng tin.
+                                   # incremental → Chỉ gửi nội dung mới.
+
+                                   
+    # frequency_file: "general.txt"
+                                   # Tệp từ khóa tùy chọn, nằm trong config/custom/keyword/.
+                                   # Bỏ trống để dùng config/frequency_words.txt.
+                                   # Có thể đặt trường này trong từng khung giờ để thay mặc định.
+                                   # Ví dụ: dùng bộ từ khóa công nghệ cho tổng hợp buổi tối.
+                                   #   frequency_file: "tech.txt"
+                                   # Chỉ có tác dụng khi filter_method là keyword.
+                                   
+    # interests_file: "finance.txt"
+                                   # Tệp mô tả chủ đề AI tùy chọn, nằm trong config/custom/ai/.
+                                   # Bỏ trống để dùng config/ai_interests.txt.
+                                   # Có thể đặt trường này trong từng khung giờ để thay mặc định.
+                                   # Ví dụ: dùng chủ đề tài chính cho tổng hợp buổi tối.
+                                   #   interests_file: "finance.txt"
+                                   # Chỉ có tác dụng khi filter_method là ai.
+
+    # filter_method: "keyword"     # Cách lọc tùy chọn: keyword hoặc ai.
+                                   # Bỏ trống để dùng filter.method trong config.yaml.
+                                   # Có thể đặt trường này trong từng khung giờ để thay mặc định.
+                                   # Ví dụ: dùng AI lọc tin cho tổng hợp buổi tối.
+                                   #   filter_method: "ai"
+    once:
+      analyze: true                # Chỉ phân tích một lần trong khung giờ để tiết kiệm phí.
+      push: true                   # Chỉ gửi một lần trong khung giờ để giảm làm phiền.
+
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Bước 1: định nghĩa khung giờ
+  #
+  # Mỗi khung giờ có một mã duy nhất, ví dụ deep_quiet,
+  # và thời gian bắt đầu/kết thúc bằng start/end.
+  #
+  # Chỉ cần khai báo trường khác default; các trường còn lại tự kế thừa.
+  # Ví dụ: weekday_morning không đặt collect sẽ kế thừa collect: true.
+  #
+  # Nếu start lớn hơn end, ví dụ 22:00 đến 07:00,
+  # hệ thống hiểu khung giờ đi qua nửa đêm.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  periods:
+
+    deep_quiet:
+      name: "Yên lặng đêm khuya"
+      start: "23:00"
+      end: "06:00"                 # 23:00 đến 06:00 hôm sau: khung giờ qua nửa đêm.
+      # frequency_file: "xxx.txt"     # Tệp từ khóa tùy chọn trong config/custom/keyword/.
+      # interests_file: "xxx.txt"     # Tệp chủ đề AI tùy chọn trong config/custom/ai/.
+      # filter_method: "keyword"     # keyword hoặc ai; bỏ trống để dùng filter.method chung.
+      collect: true                # Tiếp tục thu thập dữ liệu ban đêm.
+      analyze: true                # Có thể phân tích AI ban đêm khi không gửi thông báo.
+      push: false                  # Không gửi đêm khuya để tránh làm phiền.
+
+    weekday_morning:
+      name: "Buổi sáng ngày thường"
+      start: "08:00"
+      end: "10:00"                 # Khung rộng 2 giờ để chừa thời gian cho tác vụ định kỳ.
+      # frequency_file: "xxx.txt"     # Tệp từ khóa tùy chọn trong config/custom/keyword/.
+      # interests_file: "xxx.txt"     # Tệp chủ đề AI tùy chọn trong config/custom/ai/.
+      # filter_method: "keyword"     # keyword hoặc ai; bỏ trống để dùng filter.method chung.
+      push: true                   # Gửi một lần vào buổi sáng.
+      report_mode: "incremental"   # Chỉ gửi nội dung mới.
+      # once kế thừa push: true từ default: chỉ gửi một lần trong khung.
+
+    weekend_morning:
+      name: "Buổi sáng cuối tuần"
+      start: "10:00"
+      end: "12:00"                 # Khung rộng 2 giờ.
+      # frequency_file: "xxx.txt"     # Tệp từ khóa tùy chọn trong config/custom/keyword/.
+      # interests_file: "xxx.txt"     # Tệp chủ đề AI tùy chọn trong config/custom/ai/.
+      # filter_method: "keyword"     # keyword hoặc ai; bỏ trống để dùng filter.method chung.
+      push: true
+      report_mode: "daily"         # Cuối tuần xem tổng hợp cả ngày.
+      # once kế thừa push: true từ default: chỉ gửi một lần trong khung.
+
+    evening_summary:
+      name: "Tổng hợp buổi tối"
+      start: "19:00"
+      end: "21:00"
+      # frequency_file: "xxx.txt"     # Tệp từ khóa tùy chọn trong config/custom/keyword/.
+      # interests_file: "xxx.txt"     # Tệp chủ đề AI tùy chọn trong config/custom/ai/.
+      # filter_method: "keyword"     # keyword hoặc ai; bỏ trống để dùng filter.method chung.
+      analyze: true                # Phân tích AI vào buổi tối.
+      ai_mode: "daily"             # AI phân tích nội dung cả ngày.
+      push: true                   # Gửi vào buổi tối.
+      report_mode: "daily"         # Tổng hợp toàn bộ tin trong ngày.
+      # once kế thừa default: chỉ phân tích và gửi một lần trong khung.
+
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Bước 2: ghép khung giờ thành lịch ngày
+  #
+  # Kết hợp các khung giờ đã định nghĩa thành lịch của một ngày.
+  # Có thể đặt nhiều lịch ngày, ví dụ workday và weekend,
+  # sau đó dùng week_map để gán cho từng thứ.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  day_plans:
+    workday:                       # Lịch ngày làm việc
+      periods: ["deep_quiet", "weekday_morning", "evening_summary"]
+    weekend:                       # Lịch cuối tuần: dùng weekend_morning thay weekday_morning.
+      periods: ["deep_quiet", "weekend_morning", "evening_summary"]
+
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Bước 3: gán lịch ngày cho từng thứ
+  #
+  # 1=Thứ Hai, 2=Thứ Ba, 3=Thứ Tư, 4=Thứ Năm, 5=Thứ Sáu, 6=Thứ Bảy, 7=Chủ nhật.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  week_map:
+    1: "workday"                   # Thứ Hai dùng lịch ngày làm việc.
+    2: "workday"                   # Thứ Ba
+    3: "workday"                   # Thứ Tư
+    4: "workday"                   # Thứ Năm
+    5: "workday"                   # Thứ Sáu
+    6: "weekend"                   # Thứ Bảy dùng lịch cuối tuần.
+    7: "weekend"                   # Chủ nhật
+
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Cách xử lý khung giờ trùng nhau, thường không cần đổi.
+  #
+  # Thế nào là trùng khung giờ?
+  # Ví dụ A là 08:00–12:00 và B là 10:00–14:00,
+  # khoảng 10:00–12:00 thuộc cả A và B.
+  # Cần chọn cách xử lý khi hai khung cùng có hiệu lực.
+  #
+  # Hai cách xử lý:
+  #
+  # error_on_overlap (khuyên dùng).
+  # Báo lỗi để người dùng điều chỉnh các khung giờ.
+  # Phù hợp đa số người dùng; giúp phát hiện khung giờ bị đặt trùng.
+  #
+  #   last_wins
+  # Trong danh sách periods của day_plans, khung ghi sau được ưu tiên.
+  # Ví dụ periods: ["A", "B"]: khi trùng giờ, áp dụng B.
+  # Dùng khi muốn khung giờ nhỏ ghi sau thay thiết lập của khung lớn.
+  #
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  overlap:
+    policy: "error_on_overlap"

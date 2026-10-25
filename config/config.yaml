@@ -1,0 +1,529 @@
+# ═══════════════════════════════════════════════════════════════
+#                    Tệp cấu hình TrendRadar
+#                      Version: 2.4.0
+# ═══════════════════════════════════════════════════════════════
+
+
+# Địa chỉ trình chỉnh sửa cấu hình trực quan: https://sansan0.github.io/TrendRadar/
+
+
+# ===============================================================
+# 1. Cài đặt cơ bản
+# ===============================================================
+app:
+  # Cấu hình múi giờ (ảnh hưởng đến mọi thời điểm hiển thị, lịch chạy và dữ liệu lưu trữ)
+  # Các múi giờ thường dùng:
+  #   - Asia/Shanghai (giờ Bắc Kinh UTC+8)
+  #   - America/New_York (giờ miền Đông Hoa Kỳ UTC-5/-4)
+  #   - Europe/London (giờ London UTC+0/+1)
+  # Danh sách múi giờ đầy đủ: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  timezone: "Asia/Shanghai"
+  show_version_update: true           # Có hiển thị thông báo cập nhật phiên bản hay không (true=hiện, false=ẩn)
+
+
+# ===============================================================
+# 1.5 Lịch chạy — thời điểm thực hiện từng việc
+#
+# Tự động quyết định dựa trên các khung giờ được định nghĩa trong timeline.yaml:
+#   - Thời điểm gửi thông báo
+#   - Thời điểm phân tích bằng AI
+#   - Chế độ báo cáo sẽ dùng
+#
+# Bắt đầu nhanh: chọn một mẫu có sẵn và sửa giá trị preset
+#
+#   always_on       → Hoạt động cả ngày, có tin mới là gửi ngay
+#   morning_evening → Gửi tin cả ngày + tổng hợp trong ngày vào buổi tối (khuyên dùng)
+#   office_hours    → Ba khung giờ ngày làm việc (đến nơi → giữa ngày → hết giờ); cuối tuần tự do gửi tin mới
+#   night_owl       → Điểm tin buổi chiều + tổng hợp cả ngày vào đêm muộn
+#   custom          → Tự cấu hình hoàn toàn, xem timeline.yaml
+#
+# Xem sơ đồ thời gian chi tiết trong config/timeline.yaml
+# ===============================================================
+schedule:
+  enabled: false # Bật lịch chạy hay không (true=bật, false=tắt, mặc định tắt)
+  preset: "office_hours" # Tên mẫu có sẵn (xem giải thích bên trên)
+
+
+# ===============================================================
+# 2. Nguồn dữ liệu - nền tảng bảng xếp hạng xu hướng
+#
+# Dữ liệu lấy từ dự án mã nguồn mở newsnow: https://github.com/ourongxing/newsnow
+# Bạn có thể tự triển khai newsnow và trỏ api_url đến phiên bản của mình
+#
+# enabled: Có bật thu thập bảng xếp hạng xu hướng hay không (công tắc tổng)
+# api_url: Địa chỉ API dữ liệu xu hướng (không bắt buộc; để trống sẽ dùng địa chỉ mặc định)
+# sources: Danh sách nền tảng
+#   - id: Mã định danh duy nhất của nền tảng (không sửa)
+#   - name: Tên hiển thị (có thể tùy chỉnh; sửa không ảnh hưởng hoạt động)
+#   - expected_domain: Kiểm tra an toàn tên miền (không bắt buộc, khuyến nghị cấu hình)
+#     Điền tên miền chính (ví dụ baidu.com); hệ thống tự khớp tên miền này và mọi tên miền con
+#     Kiểm tra liên kết trả về có dùng HTTPS và đúng tên miền không; nếu không khớp, dữ liệu của nền tảng sẽ bị loại và cảnh báo được ghi lại
+#     Giúp ngăn chặn hiệu quả việc chiếm quyền liên kết hoặc sửa đổi dữ liệu
+#     Khuyến nghị cấu hình expected_domain nếu api_url không trỏ đến phiên bản do bạn tự triển khai
+# ===============================================================
+platforms:
+  enabled: false                         # Bật thu thập bảng xếp hạng nền tảng hay không (true=bật, false=tắt)
+  api_url: ""                            # Địa chỉ API dữ liệu xu hướng (để trống sẽ dùng địa chỉ mặc định)
+                                        # Nếu bạn tự triển khai newsnow, điền địa chỉ của bạn, ví dụ: https://your-domain.com/api/s
+  sources:
+    - id: "toutiao"
+      name: "Toutiao"
+      expected_domain: "toutiao.com"
+      "enabled": false
+    - id: "baidu"
+      name: "Baidu - Tin nổi bật"
+      expected_domain: "baidu.com"
+      "enabled": false
+    - id: "wallstreetcn-hot"
+      name: "WallStreetCN"
+      expected_domain: "wallstreetcn.com"
+      "enabled": false
+    - id: "thepaper"
+      name: "The Paper"
+      expected_domain: "thepaper.cn"
+      "enabled": false
+    - id: "bilibili-hot-search"
+      name: "Bilibili - Tin nổi bật"
+      expected_domain: "bilibili.com"
+      "enabled": false
+    - id: "cls-hot"
+      name: "CLS - Tin nổi bật"
+      expected_domain: "cls.cn"
+      "enabled": false
+    - id: "ifeng"
+      name: "iFeng"
+      expected_domain: "ifeng.com"
+      "enabled": false
+    - id: "tieba"
+      name: "Tieba"
+      expected_domain: "baidu.com"
+      "enabled": false
+    - id: "weibo"
+      name: "Weibo"
+      expected_domain: "weibo.com"
+      "enabled": false
+    - id: "douyin"
+      name: "Douyin"
+      expected_domain: "douyin.com"
+      "enabled": false
+    - id: "zhihu"
+      name: "Zhihu"
+      expected_domain: "zhihu.com"
+
+
+
+# ===============================================================
+# 3. Nguồn dữ liệu - đăng ký RSS
+#
+# Lưu riêng với dữ liệu bảng xếp hạng xu hướng và hiển thị theo dòng thời gian
+# Cấu hình mỗi nguồn: id (mã duy nhất), name (tên hiển thị), url (địa chỉ đăng ký)
+# enabled: Không bắt buộc, mặc định là true
+# max_age_days: Không bắt buộc, ghi đè freshness_filter.max_age_days toàn cục
+# ===============================================================
+      "enabled": false
+rss:
+  enabled: true                       # Bật thu thập RSS hay không (true=bật, false=tắt)
+
+  # Bộ lọc độ mới của bài viết (loại bài quá cũ để tránh gửi trùng)
+  # Chỉ lọc ở bước gửi thông báo; mọi bài viết vẫn được lưu vào cơ sở dữ liệu
+  freshness_filter:
+    enabled: true                     # Bật bộ lọc độ mới hay không (true=bật, false=tắt)
+
+    max_age_days: 1                   # Tuổi tối đa của bài viết (ngày)
+                                      # - Số nguyên dương: chỉ gửi bài trong vòng N ngày
+                                      # - 0: tắt bộ lọc, gửi tất cả bài viết
+
+  # Có thể cấu hình max_age_days riêng cho từng feed để ghi đè thiết lập toàn cục:
+  # - Không cấu hình: dùng freshness_filter.max_age_days toàn cục (hiện đặt 1 ngày; nếu thiếu cấu hình thì mặc định 3 ngày)
+  # - Số nguyên dương: ghi đè thiết lập toàn cục, chỉ gửi bài trong số ngày này
+  # - 0: tắt bộ lọc độ mới cho feed này, gửi tất cả bài viết
+  feeds:
+    - id: "hacker-news"
+      name: "Hacker News"
+      url: "https://hnrss.org/frontpage"
+
+      "enabled": false
+    - id: "ruanyifeng"
+      name: "Blog của Ruan Yifeng"
+      url: "http://www.ruanyifeng.com/blog/atom.xml"
+      enabled: false # Tắt nguồn này
+      # max_age_days: 3               # Ví dụ: gửi bài trong vòng 3 ngày (dành cho blog cập nhật chậm)
+     
+    - id: "yahoo-finance"
+      name: "Yahoo Finance"
+      url: "https://finance.yahoo.com/news/rssindex"
+
+    # Ví dụ về nguồn tùy chỉnh
+    # - id: "custom-feed"
+    #   name: "Nguồn tùy chỉnh"
+    #   url: "https://example.com/feed.xml"
+    #   enabled: false
+    #   max_age_days: 0               # Ví dụ: tắt bộ lọc, gửi tất cả bài viết
+
+
+# ===============================================================
+# 4. Chế độ báo cáo
+# ===============================================================
+      "enabled": false
+    - {"id": "vnexpress-tech", "name": "VnExpress — Khoa học công nghệ (VI)", "url": "https://vnexpress.net/rss/khoa-hoc-cong-nghe.rss", "enabled": false, "max_age_days": 3}
+    - {"id": "vnexpress-sports", "name": "VnExpress — Thể thao (VI)", "url": "https://vnexpress.net/rss/the-thao.rss", "enabled": true, "max_age_days": 3}
+    - {"id": "tuoitre-tech", "name": "Tuổi Trẻ — Nhịp sống số (VI)", "url": "https://tuoitre.vn/rss/nhip-song-so.rss", "enabled": false, "max_age_days": 3}
+    - {"id": "tuoitre-sports", "name": "Tuổi Trẻ — Thể thao (VI)", "url": "https://tuoitre.vn/rss/the-thao.rss", "enabled": false, "max_age_days": 3}
+    - {"id": "bbc-football", "name": "BBC — Bóng đá (EN)", "url": "https://feeds.bbci.co.uk/sport/football/rss.xml", "enabled": false, "max_age_days": 3}
+    - {"id": "espn-soccer", "name": "ESPN — Bóng đá (EN)", "url": "https://www.espn.com/espn/rss/soccer/news", "enabled": false, "max_age_days": 3}
+    - {"id": "bbc-basketball", "name": "BBC — Bóng rổ (EN)", "url": "https://feeds.bbci.co.uk/sport/basketball/rss.xml", "enabled": false, "max_age_days": 7}
+    - {"id": "mit-robotics", "name": "MIT — Robotics (EN)", "url": "https://news.mit.edu/topic/mitrobotics-rss.xml", "enabled": false, "max_age_days": 7}
+    - {"id": "mit-ai", "name": "MIT — AI (EN)", "url": "https://news.mit.edu/rss/topic/artificial-intelligence2", "enabled": false, "max_age_days": 3}
+    - {"id": "techcrunch-ai", "name": "TechCrunch — AI (EN)", "url": "https://techcrunch.com/category/artificial-intelligence/feed/", "enabled": false, "max_age_days": 3}
+    - {"id": "ars-tech", "name": "Ars Technica — Công nghệ (EN)", "url": "https://feeds.arstechnica.com/arstechnica/technology-lab", "enabled": false, "max_age_days": 3}
+    - {"id": "vnexpress-economy-1", "name": "VnExpress — Kinh tế", "url": "https://vnexpress.net/rss/kinh-doanh.rss", "enabled": false, "publisher_id": "vnexpress", "country": "VN", "country_name": "Việt Nam", "category": "economy"}
+    - {"id": "dantri-general-1", "name": "Dân trí — Tổng hợp", "url": "https://dantri.com.vn/rss/home.rss", "enabled": false, "publisher_id": "dantri", "country": "VN", "country_name": "Việt Nam", "category": "general"}
+    - {"id": "dantri-lifestyle-2", "name": "Dân trí — Đời sống", "url": "https://dantri.com.vn/rss/doi-song.rss", "enabled": false, "publisher_id": "dantri", "country": "VN", "country_name": "Việt Nam", "category": "lifestyle"}
+    - {"id": "thanhnien-football-5", "name": "Thanh Niên — Bóng đá", "url": "https://thanhnien.vn/rss/the-thao/bong-da-viet-nam.rss", "enabled": true, "publisher_id": "thanhnien", "country": "VN", "country_name": "Việt Nam", "category": "football"}
+    - {"id": "thanhnien-football-6", "name": "Thanh Niên — Bóng đá", "url": "https://thanhnien.vn/rss/the-thao/bong-da-quoc-te.rss", "enabled": true, "publisher_id": "thanhnien", "country": "VN", "country_name": "Việt Nam", "category": "football"}
+report:
+  mode: "current"                     # Chế độ báo cáo (làm mặc định khi bật schedule; có thể bị khung giờ trong timeline ghi đè)
+                                      # daily = Tổng hợp trong ngày, gửi theo lịch mọi tin khớp trong ngày (kể cả tin đã gửi trước đó)
+                                      # current = Bảng xếp hạng hiện tại, gửi theo lịch các tin khớp đang có trên bảng (tin còn trên bảng sẽ xuất hiện mỗi lần)
+                                      # incremental = Theo dõi phần tăng thêm, chỉ gửi nội dung mới và không lặp (không gửi nếu không có nội dung mới)
+
+  display_mode: "keyword"             # Tiêu chí nhóm
+                                      # keyword = Hiển thị theo nhóm từ khóa
+                                      # platform = Hiển thị theo nhóm nền tảng/nguồn
+
+  sort_by_position_first: false       # Sắp xếp ở chế độ từ khóa (chỉ có hiệu lực khi display_mode=keyword)
+                                      # true = Theo thứ tự được định nghĩa trong frequency_words.txt
+                                      # false = Theo số tin xu hướng khớp được (nhiều hơn xếp trước)
+
+  rank_threshold: 5                   # Ngưỡng làm nổi bật thứ hạng (chỉ ảnh hưởng cách nhấn mạnh hiển thị, không đổi phạm vi thu thập)
+
+  max_news_per_keyword: 0             # Số tin tối đa hiển thị cho mỗi từ khóa/thẻ (0=không giới hạn, chỉ cắt bớt phần hiển thị)
+
+
+# ===============================================================
+# 4.5 Chiến lược lọc
+# ===============================================================
+filter:
+  method: "keyword"                     # Phương thức lọc (chọn một trong hai)
+                                       # keyword = khớp từ khóa, không gọi AI, không tốn token nhưng quy tắc cố định
+                                       #           Các cụm từ được định nghĩa trong config/frequency_words.txt
+                                       # ai = AI phân loại thông minh, linh hoạt hơn nhưng mỗi lần chạy đều tốn token
+                                       #      Mô tả sở thích nằm trong config/ai_interests.txt, cần kết hợp với ai_filter bên dưới
+
+  priority_sort_enabled: true          # Sắp xếp thẻ trong chế độ AI (chỉ có hiệu lực khi method=ai)
+                                       # true = theo thứ tự được định nghĩa trong mô tả sở thích
+                                       # false = theo số kết quả khớp (nhiều hơn xếp trước)
+
+
+# ===============================================================
+# 4.6 Cấu hình lọc thông minh bằng AI (chỉ có hiệu lực khi filter.method=ai)
+# ===============================================================
+ai_filter:
+  batch_size: 200                         # Số tiêu đề gửi cho AI trong mỗi lô; tự động chia lô nếu vượt quá số này
+  batch_interval: 2                       # Khoảng nghỉ giữa các lô (giây), tránh vượt giới hạn tần suất API; 0=không chờ
+
+  min_score: 0.7                          # Ngưỡng điểm tối thiểu để gửi (0.0~1.0); giá trị càng cao thì tiêu chí càng nghiêm ngặt
+                                          # Nên bắt đầu từ 0.5~0.7; 0=không lọc
+
+  # Tệp mô tả sở thích (mặc định là config/ai_interests.txt, không cần cấu hình)
+  # Đặt tệp tùy chỉnh trong thư mục config/custom/ai/, sau đó chỉ định tên tệp:
+  # interests_file: "finance.txt"    # → tải config/custom/ai/finance.txt
+
+  reclassify_threshold: 0.6              # Ngưỡng kích hoạt phân loại lại toàn bộ (0~1)
+                                          # Càng thấp càng ưu tiên phân loại lại toàn bộ (chính xác hơn nhưng tốn nhiều token hơn)
+                                          # Càng cao càng ưu tiên cập nhật tăng dần (tiết kiệm hơn nhưng có thể kém mới)
+
+  # Thường không cần sửa các mẫu câu lệnh bên dưới (không khuyến nghị chỉnh sửa)
+
+  # Mẫu câu lệnh phân loại
+  prompt_file: "prompt.txt"
+
+  # Mẫu câu lệnh trích xuất thẻ (dùng trong lần chạy đầu tiên)
+  extract_prompt_file: "extract_prompt.txt"
+
+  # Mẫu câu lệnh cập nhật thẻ (AI so sánh thẻ cũ và mới khi sở thích thay đổi)
+  update_tags_prompt_file: "update_tags_prompt.txt"
+
+
+# ===============================================================
+# 5. Kiểm soát nội dung gửi đi
+#
+# Quản lý tập trung các khu vực hiển thị trong tin nhắn gửi đi và thứ tự sắp xếp
+# ===============================================================
+display:
+  # Thứ tự hiển thị các khu vực (từ trên xuống dưới = thứ tự trong nội dung gửi đi)
+  # Để đổi thứ tự: cắt và dán nguyên dòng
+  # Muốn hiển thị một khu vực, cần đồng thời: 1. Có trong danh sách này  2. Công tắc tương ứng bên dưới trong regions là true
+  region_order:
+    - new_items                           # 1️⃣ Khu vực tin nóng mới
+    - hotlist                             # 2️⃣ Khu vực bảng xếp hạng nóng (khớp từ khóa / lọc thông minh bằng AI)
+    - rss                                 # 3️⃣ Khu vực đăng ký RSS
+    - standalone                          # 4️⃣ Khu vực hiển thị riêng
+    - ai_analysis                         # 5️⃣ Khu vực phân tích AI
+
+  # Công tắc cho các khu vực gửi đi (cần dùng cùng region_order ở trên)
+  regions:
+    hotlist: true                     # Khu vực bảng xếp hạng nóng: khớp từ khóa / lọc thông minh bằng AI (true=hiển thị, false=ẩn)
+    new_items: false                  # Khu vực tin nóng mới: gồm tin mới từ bảng xếp hạng nóng và RSS (true=hiển thị, false=ẩn)
+                                      # Lưu ý: cấu hình này không ảnh hưởng đến nhãn 🆕 trong thống kê từ khóa nóng
+
+    rss: true                         # Khu vực đăng ký RSS (true=hiển thị và phân tích, false=ẩn và bỏ qua phân tích)
+    standalone: false                 # Khu vực hiển thị riêng: hiển thị đầy đủ bảng xếp hạng nóng/RSS, không lọc từ khóa (true=hiển thị, false=ẩn)
+    ai_analysis: true                 # Khu vực phân tích AI (true=hiển thị, false=ẩn)
+
+  # Khu vực hiển thị riêng: hiển thị đầy đủ các nền tảng/RSS được chỉ định, không lọc từ khóa
+  # Việc hiển thị khi gửi do regions.standalone điều khiển; phân tích AI do ai_analysis.include_standalone điều khiển
+  standalone:
+    platforms: ["zhihu", "wallstreetcn-hot"]     # Danh sách ID nền tảng bảng xếp hạng nóng (ví dụ ["zhihu", "weibo"])
+    rss_feeds: []                                # Danh sách ID nguồn RSS (ví dụ ["hacker-news"])
+    max_items: 20                                # Số mục hiển thị tối đa cho mỗi nguồn (0=không giới hạn)
+
+
+# ===============================================================
+# 6. Thông báo gửi đi
+#
+# ⚠️ Cảnh báo bảo mật: không công khai địa chỉ webhook!
+#    Khi triển khai trên GitHub, hãy điền webhook vào GitHub Secrets, không ghi ở đây
+#
+# 📌 Nhiều tài khoản: phân tách bằng dấu chấm phẩy (;), ví dụ "url1;url2;url3"
+#    Số lượng các mục cần ghép cặp (như Telegram token và chat_id) phải bằng nhau
+# ===============================================================
+notification:
+  enabled: false                       # Có bật tính năng thông báo không (true=bật, false=tắt) — công tắc tổng
+                                      # Sau khi bật schedule, mục này vẫn là công tắc tổng: false=không bao giờ gửi, true=do lịch điều khiển
+
+  # Cấu hình kênh gửi thông báo
+  channels:
+    feishu:
+      webhook_url: ""                 # URL webhook của bot Feishu
+
+    dingtalk:
+      webhook_url: ""                 # URL webhook của DingTalk
+
+    wework:
+      webhook_url: ""                 # URL webhook của WeCom
+      msg_type: "markdown"            # Loại tin nhắn: markdown(bot nhóm) | text(ứng dụng WeChat cá nhân)
+
+    telegram:
+      bot_token: ""                   # Token bot Telegram
+      chat_id: ""                     # ID cuộc trò chuyện Telegram
+
+    email:
+      from: ""                        # Địa chỉ email người gửi
+      password: ""                    # Mật khẩu email hoặc mã ủy quyền
+      to: ""                          # Email người nhận; nhiều địa chỉ phân tách bằng dấu phẩy
+      smtp_server: ""                 # Máy chủ SMTP (tùy chọn, để trống sẽ tự nhận diện)
+      smtp_port: ""                   # Cổng SMTP (tùy chọn, để trống sẽ tự nhận diện)
+
+    ntfy:
+      server_url: "https://ntfy.sh"   # Địa chỉ máy chủ ntfy (có thể đổi sang máy chủ tự lưu trữ)
+      topic: ""                       # Tên chủ đề ntfy
+      token: ""                       # Token truy cập ntfy (tùy chọn, dùng cho chủ đề riêng tư)
+
+    bark:
+      url: ""                         # URL gửi Bark (định dạng: https://api.day.app/your_device_key)
+
+    slack:
+      webhook_url: ""                 # URL Incoming Webhook của Slack
+
+    generic_webhook:
+      webhook_url: ""                 # URL Webhook chung (hỗ trợ Discord, Matrix, IFTTT, v.v.)
+      payload_template: ""            # Mẫu JSON, hỗ trợ chỗ giữ chỗ {title} và {content}
+                                      # Ví dụ: {"content": "{content}"}
+                                      # Để trống sẽ dùng định dạng mặc định: {"title": "{title}", "content": "{content}"}
+
+
+# ===============================================================
+# 7. Cấu hình lưu trữ
+# ===============================================================
+storage:
+  # Chọn hệ thống lưu trữ
+  # - auto: tự động chọn (GitHub Actions và có cấu hình lưu trữ từ xa → remote, nếu không → local)
+  # - local: SQLite cục bộ + tệp TXT/HTML
+  # - remote: lưu trữ đám mây từ xa (giao thức tương thích S3, hỗ trợ R2/OSS/COS, v.v.)
+  backend: "auto"
+
+  # Tùy chọn định dạng dữ liệu
+  formats:
+    sqlite: true                      # Lưu trữ chính (bắt buộc giữ true, không tắt)
+    txt: false                        # Có tạo bản chụp dữ liệu dạng TXT không (true=có, false=không)
+    html: true                        # Có tạo báo cáo HTML không (true=có, false=không)
+                                      # ⚠️ Phải đặt true nếu gửi email hoặc cần xem báo cáo trên web
+
+  # Cấu hình lưu trữ cục bộ
+  local:
+    data_dir: "output"                # Thư mục dữ liệu
+    retention_days: 0                 # Số ngày lưu giữ (0=giữ vĩnh viễn)
+
+  # Cấu hình lưu trữ từ xa (giao thức tương thích S3)
+  # Hỗ trợ: Cloudflare R2, Alibaba Cloud OSS, Tencent Cloud COS, AWS S3, MinIO, v.v.
+  # Khuyến nghị cấu hình thông tin nhạy cảm trong GitHub Secrets hoặc biến môi trường
+  remote:
+    retention_days: 0                 # Số ngày lưu giữ (0=giữ vĩnh viễn)
+
+    # Cấu hình tương thích S3 (hoặc dùng biến môi trường như S3_ENDPOINT_URL)
+    endpoint_url: ""                  # Điểm cuối dịch vụ
+                                      # Cloudflare R2: https://<account_id>.r2.cloudflarestorage.com
+                                      # Alibaba Cloud OSS: https://oss-cn-hangzhou.aliyuncs.com
+                                      # Tencent Cloud COS: https://cos.ap-guangzhou.myqcloud.com
+    bucket_name: ""                   # Tên bucket (thùng chứa dữ liệu)
+    access_key_id: ""                 # ID khóa truy cập
+    secret_access_key: ""             # Khóa truy cập
+    region: ""                        # Khu vực (không bắt buộc, một số nhà cung cấp yêu cầu)
+
+  # Tải dữ liệu (đồng bộ từ xa về máy, dùng trong các trường hợp như MCP Server)
+  pull:
+    enabled: false                    # Bật tự động tải khi khởi động (true=bật, false=tắt)
+    days: 7                           # Tải dữ liệu trong N ngày gần nhất
+
+
+# ===============================================================
+# 8. Cấu hình mô hình AI (dùng chung cho ai_analysis / ai_translation / ai_filter)
+# ===============================================================
+ai:
+  # Định dạng mô hình LiteLLM: nhà cung cấp/tên mô hình
+  # Ví dụ:
+  #   - deepseek/deepseek-v4-flash (DeepSeek，chi phí hợp lý và đáp ứng tốt, khuyến nghị)
+  #   - deepseek/deepseek-v4-pro
+  #   - openai/gpt-4o (OpenAI)
+  #   - gemini/gemini-2.5-flash (Google Gemini)
+  #   - anthropic/claude-sonnet-4-20250514 (Anthropic)
+  #   - ollama/llama3 (chạy cục bộ Ollama)
+  # Danh sách đầy đủ: https://docs.litellm.ai/docs/providers
+  # Nếu bạn thấy khó đọc tài liệu tiếng Anh, hãy nhấp 【Ask AI】 ở góc dưới bên phải trang và hỏi bằng tiếng Việt cách cấu hình
+
+  model: "deepseek/deepseek-v4-flash"
+
+  api_key: ""                       # API Key（khuyến nghị dùng biến môi trường AI_API_KEY）
+  
+  api_base: ""                      # Địa chỉ API tùy chỉnh (không bắt buộc, thường có thể để trống)
+                                    #
+                                    # ❓ Khi nào cần điền?
+                                    #    Khi nhà cung cấp dịch vụ AI bạn dùng không có trong danh sách hỗ trợ ở trên.
+                                    #    Ví dụ: một số dịch vụ trung chuyển API hoặc dịch vụ tự triển khai riêng.
+                                    #    Nếu bạn dùng các nhà cung cấp phổ biến như DeepSeek, OpenAI hoặc Gemini,
+                                    #    không cần điền mục này, cứ để trống.
+                                    #
+                                    # 🔧 Cách điền gồm hai bước:
+                                    #    Bước 1 - điền vào api_base địa chỉ giao diện kết nối do nhà cung cấp đưa
+                                    #      Ví dụ: https://your-provider.com/v1
+                                    #
+                                    #    Bước 2 - thêm tiền tố "openai/" vào trước model
+                                    #      Ví dụ: openai/deepseek-ai/DeepSeek-V3
+                                    #
+                                    # 💡 Vì sao cần thêm tiền tố openai/?
+                                    #    Phần lớn nhà cung cấp AI tương thích với cùng một định dạng giao diện kết nối chung,
+                                    #    thêm openai/ để báo cho hệ thống "kết nối bằng định dạng chung này",
+                                    #    nhờ đó gần như nhà cung cấp nào cũng có thể kết nối.
+
+
+  timeout: 120                      # Thời gian chờ yêu cầu tối đa (giây)
+
+  temperature: 1.0                  # Nhiệt độ lấy mẫu (0.0-2.0)
+                                    # Lưu ý: một số mô hình (như gpt-5) có thể yêu cầu giá trị phải là 1.0, nếu không sẽ báo lỗi
+  
+  max_tokens: 5000                  # Số token tối đa được tạo
+                                    # Lưu ý: nếu API không hỗ trợ tham số này (trả về HTTP 400), hãy đặt thành 0 để không gửi tham số
+  # Tùy chọn nâng cao
+  num_retries: 1                    # Số lần thử lại khi thất bại
+  fallback_models: []               # Danh sách mô hình dự phòng (không bắt buộc)
+                                    # Ví dụ: ["openai/gpt-4o-mini", "openai/deepseek-ai/DeepSeek-V3"]
+
+  # Tham số bổ sung (thường không cần sửa; bỏ dấu # để bật)
+  # extra_params:
+  #   top_p: 1.0
+  #   presence_penalty: 0.0
+  #   stop: ["END"]
+
+
+# ===============================================================
+# 9. Chức năng phân tích AI (xem cấu hình mô hình trong mục ai ở trên)
+# ===============================================================
+ai_analysis:
+  enabled: false                     # Bật phân tích AI (true=bật, false=tắt) — công tắc tổng
+                                    # Sau khi bật schedule, mục này vẫn là công tắc tổng: false=không bao giờ phân tích, true=do lịch điều phối kiểm soát
+
+  language: "Vietnamese"               # Ngôn ngữ báo cáo phân tích（ví dụ "English", "Korean", "French"）
+  prompt_file: "ai_analysis_prompt.txt"   # Tệp hướng dẫn cho AI (đường dẫn tương đối với thư mục config)
+
+  mode: "follow_report"             # Chế độ phân tích AI (có thể độc lập với report.mode)
+                                    # follow_report = theo report.mode (mặc định)
+                                    # daily / current / incremental = bắt buộc dùng chế độ được chỉ định
+
+  max_news_for_analysis: 150        # Số tin tối đa đưa vào phân tích (yếu tố chính kiểm soát chi phí token)
+                                    # Tin trong bảng xếp hạng ưu tiên dùng hạn mức; RSS dùng phần còn lại; khu vực hiển thị riêng không bị giới hạn này
+
+  include_rss: false                # Có đưa nội dung RSS vào phân tích không (true=có, false=không)
+  include_standalone: true          # Có đưa dữ liệu khu vực hiển thị riêng vào không (true=có, false=không)
+
+  include_rank_timeline: true       # Mức độ chi tiết của dòng thời gian thứ hạng
+                                    # true = toàn bộ diễn biến（như 1(09:30)→2(10:00)），AI phân tích chính xác hơn nhưng tốn thêm 0.5~1 lần token
+                                    # false = định dạng rút gọn（khoảng thứ hạng + số lần xuất hiện），tiết kiệm token hơn
+
+
+
+
+# ===============================================================
+# 10. Chức năng dịch bằng AI (xem cấu hình mô hình trong mục ai ở trên)
+#
+# Dịch tiêu đề được gửi đi, không bao gồm nội dung phân tích AI
+# ===============================================================
+ai_translation:
+  enabled: false                     # Bật chức năng dịch (true=bật, false=tắt)
+  language: "Vietnamese"                   # Ngôn ngữ đích（ví dụ "English", "Korean", "French"）
+  prompt_file: "ai_translation_prompt.txt"   # Tệp hướng dẫn cho AI (đường dẫn tương đối với thư mục config)
+
+  batch_size: 100                   # Số tiêu đề gửi cho AI trong mỗi đợt; vượt quá số này sẽ tự chia thành nhiều đợt
+  batch_interval: 2                 # Khoảng nghỉ giữa các đợt (giây), để tránh giới hạn tốc độ API; 0=không chờ
+
+  # Phạm vi dịch (khu vực bị tắt trong display.regions sẽ không được dịch dù mục này đang bật)
+  scope:
+    hotlist: true                  # Dịch tiêu đề bảng xếp hạng (true=có, false=không)
+    rss: true                       # Dịch tiêu đề RSS (true=có, false=không)
+    standalone: true                # Dịch tiêu đề khu vực hiển thị riêng (true=có, false=không)
+
+
+# ===============================================================
+# 11. Cài đặt nâng cao (thường không cần sửa)
+# ===============================================================
+advanced:
+  debug: false                        # Chế độ gỡ lỗi (true=bật ghi nhật ký chi tiết, false=chế độ bình thường)
+
+  # Kiểm tra phiên bản
+  version_check_url: "https://raw.githubusercontent.com/sansan0/TrendRadar/refs/heads/master/version"
+  mcp_version_check_url: "https://raw.githubusercontent.com/sansan0/TrendRadar/refs/heads/master/version_mcp"
+  configs_version_check_url: "https://raw.githubusercontent.com/sansan0/TrendRadar/refs/heads/master/version_configs"
+
+  # Tham số kỹ thuật của trình thu thập bảng xếp hạng
+  crawler:
+    request_interval: 2000            # Khoảng nghỉ giữa các yêu cầu (mili giây)
+    use_proxy: false                  # Bật proxy (true=bật, false=không dùng)
+    default_proxy: "http://127.0.0.1:10801"
+
+  # Cài đặt RSS
+  rss:
+    request_interval: 1000            # Khoảng nghỉ giữa các yêu cầu (mili giây)
+    timeout: 15                       # Thời gian chờ yêu cầu tối đa (giây)
+    use_proxy: false                  # Dùng proxy (true=có, false=không)
+    proxy_url: ""                     # Proxy riêng cho RSS (để trống sẽ dùng crawler.default_proxy)
+
+  # Trọng số sắp xếp (dùng để sắp xếp lại xu hướng tìm kiếm trên các nền tảng)
+  # Tổng các trọng số bằng 1
+  weight:
+    rank: 0.6                         # Trọng số thứ hạng
+    frequency: 0.3                    # Trọng số tần suất
+    hotness: 0.1                      # Trọng số độ phổ biến
+
+  # Giới hạn nhiều tài khoản
+  max_accounts_per_channel: 3         # Số tài khoản tối đa cho mỗi kênh
+
+  # Các tham số nội bộ dưới đây (thường không cần sửa)
+  # Kích thước mỗi lô tin nhắn (byte) - cấu hình nội bộ, vui lòng không sửa
+  batch_size:
+    default: 4000
+    dingtalk: 20000
+    feishu: 30000
+    bark: 4000
+    slack: 4000
+  batch_send_interval: 3              # Khoảng nghỉ giữa các lô gửi (giây)
+  feishu_message_separator: "━━━━━━━━━━━━━━━━"

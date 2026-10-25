@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrendRadar - Trình chỉnh sửa cấu hình</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- js-yaml -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <!-- SortableJS (拖拽排序库) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="./assets/style.css">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- 顶部导航 -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 flex-shrink-0 z-20">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+            <a href="https://github.com/sansan0/TrendRadar" target="_blank" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <i class="fa-solid fa-sliders text-blue-600 text-lg"></i>
+                <span class="font-bold text-lg tracking-tight text-gray-900">TrendRadar <span class="text-gray-500 text-xs font-normal ml-2" data-i18n="nav.subtitle">Trình chỉnh sửa cấu hình </span></span>
+            </a>
+
+            <!-- 隐私安全提示 -->
+            <div class="hidden lg:flex items-center text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 select-none">
+                <i class="fa-solid fa-shield-halved mr-1.5 text-green-500"></i>
+                <span data-i18n="nav.privacy">Trang tĩnh — dữ liệu chỉ được lưu trong trình duyệt của bạn</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- 中英文切换 -->
+                <button id="lang-toggle-btn" onclick="switchLang(getLang()==='vi'?'en':'vi')" class="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-blue-50 px-2.5 py-1.5 rounded-md border border-gray-200 transition-colors select-none" title="Chuyển sang tiếng Anh">
+                    <i class="fa-solid fa-globe text-gray-400"></i>
+                    <span id="lang-toggle-label">EN</span>
+                </button>
+                <button onclick="openLoadConfigModal()" class="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1">
+                    <i class="fa-solid fa-cloud-arrow-down"></i><span data-i18n="nav.loadLatest">Tải cấu hình mới nhất</span>
+                </button>
+                <button onclick="copyResult()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-medium transition-colors shadow-sm">
+                    <i class="fa-regular fa-copy mr-1.5"></i><span data-i18n="nav.copyConfig">Sao chép cấu hình</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主界面：左右分栏 -->
+    <main class="flex-grow flex overflow-hidden">
+
+        <!-- 左侧：源代码编辑器 (Source) -->
+        <div class="w-1/2 flex flex-col border-r border-gray-200 bg-[#1e1e1e]">
+            <!-- Tab 切换 -->
+            <div class="flex items-center bg-[#252526] border-b border-[#333]">
+                <button id="tab-config" onclick="switchTab('config')" class="tab-button active px-4 py-2 text-xs font-bold text-gray-300 hover:bg-[#2d2d30] transition-colors border-b-2 border-blue-500">
+                    <i class="fa-solid fa-code mr-2"></i>config.yaml
+                </button>
+                <button id="tab-frequency" onclick="switchTab('frequency')" class="tab-button px-4 py-2 text-xs font-bold text-gray-500 hover:bg-[#2d2d30] transition-colors border-b-2 border-transparent">
+                    <i class="fa-solid fa-filter mr-2"></i>frequency_words.txt
+                </button>
+                <button id="tab-timeline" onclick="switchTab('timeline')" class="tab-button px-4 py-2 text-xs font-bold text-gray-500 hover:bg-[#2d2d30] transition-colors border-b-2 border-transparent">
+                    <i class="fa-solid fa-calendar-week mr-2"></i>timeline.yaml
+                </button>
+                <div class="flex-grow"></div>
+                <!-- 保存时间显示 -->
+                <div id="save-time-config" class="save-time-badge px-3 text-[10px] text-gray-500 flex items-center gap-1">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="config-save-label" class="hidden" data-i18n="save.saved">Đã lưu: </span>
+                    <span id="config-save-time" class="text-gray-400" title="Chưa lưu" data-i18n="save.notSaved">Chưa lưu</span>
+                </div>
+                <div id="save-time-frequency" class="save-time-badge hidden px-3 text-[10px] text-gray-500 flex items-center gap-1">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="frequency-save-label" class="hidden" data-i18n="save.saved">Đã lưu: </span>
+                    <span id="frequency-save-time" class="text-gray-400" title="Chưa lưu" data-i18n="save.notSaved">Chưa lưu</span>
+                </div>
+                <div id="save-time-timeline" class="save-time-badge hidden px-3 text-[10px] text-gray-500 flex items-center gap-1">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="timeline-save-label" class="hidden" data-i18n="save.saved">Đã lưu: </span>
+                    <span id="timeline-save-time" class="text-gray-400" title="Chưa lưu" data-i18n="save.notSaved">Chưa lưu</span>
+                </div>
+            </div>
+
+            <!-- Config 编辑器 -->
+            <div id="yaml-editor-wrap" class="tab-content highlight-editor-wrap flex-grow w-full h-full bg-[#1e1e1e]">
+                <div id="yaml-backdrop" class="highlight-backdrop"></div>
+                <textarea id="yaml-editor" class="highlight-textarea" spellcheck="false"></textarea>
+            </div>
+
+            <!-- Frequency 编辑器 -->
+            <div id="frequency-editor-wrap" class="tab-content hidden highlight-editor-wrap flex-grow w-full h-full bg-[#1e1e1e]">
+                <div id="frequency-backdrop" class="highlight-backdrop"></div>
+                <textarea id="frequency-editor" class="highlight-textarea" spellcheck="false"></textarea>
+            </div>
+
+            <!-- Timeline 编辑器 -->
+            <div id="timeline-editor-wrap" class="tab-content hidden highlight-editor-wrap flex-grow w-full h-full bg-[#1e1e1e]">
+                <div id="timeline-backdrop" class="highlight-backdrop"></div>
+                <textarea id="timeline-editor" class="highlight-textarea" spellcheck="false"></textarea>
+            </div>
+        </div>
+
+        <!-- 右侧：可视化配置 + 支持侧栏 -->
+        <div class="w-1/2 flex">
+        <!-- 可视化配置 (Visual) -->
+        <div class="flex-1 flex flex-col bg-gray-50 min-w-0">
+            <div class="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-bold text-gray-700"><i class="fa-solid fa-list-check mr-2"></i><span id="right-panel-title" data-i18n="panel.configModules">Các mục cấu hình</span></span>
+                    <button id="version-check-btn" onclick="checkVersion()" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded shadow-sm transition-all flex items-center gap-1.5" title="Kiểm tra phiên bản config.yaml">
+                        <i class="fa-solid fa-code-compare"></i>
+                        <span data-i18n="panel.versionCheck">Kiểm tra phiên bản</span>
+                    </button>
+                    <button onclick="resetToDefault()" class="text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1" title="Khôi phục nội dung hiện tại về mặc định">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 模块导航栏 -->
+            <div id="module-nav" class="tab-content bg-white border-b border-gray-200 px-4 py-2 flex flex-wrap gap-1">
+            </div>
+
+            <!-- Config 可视化面板 -->
+            <div id="config-panel" class="tab-content flex-grow overflow-y-auto p-6 space-y-6">
+            </div>
+
+            <!-- Frequency 可视化面板 -->
+            <div id="frequency-panel" class="tab-content hidden flex-grow overflow-y-auto p-6 space-y-6">
+            </div>
+
+            <!-- Timeline 可视化面板 -->
+            <div id="timeline-panel" class="tab-content hidden flex-grow overflow-y-auto p-6 space-y-6">
+            </div>
+        </div>
+
+        </div>
+    </main>
+
+    <!-- RSS 添加弹窗 -->
+    <div id="rss-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-rss mr-2 text-orange-500"></i><span data-i18n="rssModal.addTitle">Thêm kênh RSS</span></h3>
+                <button onclick="closeRssModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="rssModal.idLabel">ID kênh (duy nhất, gồm chữ và số)</label>
+                    <input type="text" id="rss-id" placeholder="ví dụ: my-blog" data-i18n-placeholder="rssModal.idPlaceholder" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="rssModal.nameLabel">Tên hiển thị</label>
+                    <input type="text" id="rss-name" placeholder="ví dụ: Blog của tôi" data-i18n-placeholder="rssModal.namePlaceholder" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="rssModal.urlLabel">Địa chỉ RSS</label>
+                    <input type="text" id="rss-url" placeholder="https://example.com/feed.xml" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="rssModal.maxAgeLabel">Tuổi tối đa của bài viết (ngày, tùy chọn)</label>
+                    <input type="number" id="rss-max-age" placeholder="Để trống để dùng cài đặt chung" data-i18n-placeholder="rssModal.maxAgePlaceholder" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
+            <!-- RSS 灵感折叠区 -->
+            <div class="mt-5 border-t border-gray-100 pt-4">
+                <button type="button" onclick="toggleRssTips()" class="w-full flex items-center justify-between text-xs text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-2 rounded-lg transition-all group">
+                    <span class="font-bold flex items-center gap-1.5">
+                        <i class="fa-regular fa-lightbulb"></i> <span data-i18n="rssModal.tipsTitle">Gợi ý và thư viện RSS tham khảo</span> <span class="font-normal opacity-70 ml-1" data-i18n="rssModal.tipsHasFeeds">(có các kênh phổ biến)</span>
+                    </span>
+                    <i id="rss-tips-icon" class="fa-solid fa-chevron-down transition-transform duration-200 text-orange-400 group-hover:text-orange-600" style="transform: rotate(180deg);"></i>
+                </button>
+
+                <div id="rss-tips-panel" class="mt-2 space-y-3 pl-1">
+
+                    <!-- 必应新闻 -->
+                    <div class="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fa-brands fa-microsoft text-blue-500"></i>
+                            <span class="font-bold text-gray-700" data-i18n="rssModal.bingNews">Bing News (hỗ trợ mọi từ khóa)</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                             <button onclick="fillRssUrl('https://www.bing.com/news/search?q=công+nghệ+lập+trình&format=RSS')" class="text-left text-[10px] border border-gray-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 rounded px-2 py-1.5 transition-colors truncate" title="Nhấp để điền">
+                                🚀 Công nghệ/Lập trình
+                            </button>
+                             <button onclick="fillRssUrl('https://www.bing.com/news/search?q=Tin tức thế giới&format=RSS')" class="text-left text-[10px] border border-gray-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 rounded px-2 py-1.5 transition-colors truncate" title="Nhấp để điền">
+                                🌍 Tin tức thế giới
+                            </button>
+                             <button onclick="fillRssUrl('https://www.bing.com/news/search?q=Trí tuệ nhân tạo&format=RSS')" class="text-left text-[10px] border border-gray-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 rounded px-2 py-1.5 transition-colors truncate" title="Nhấp để điền">
+                                🤖 Trí tuệ nhân tạo
+                            </button>
+                             <button onclick="fillRssUrl('https://www.bing.com/news/search?q=giá+vàng+xu+hướng&format=RSS')" class="text-left text-[10px] border border-gray-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 rounded px-2 py-1.5 transition-colors truncate" title="Nhấp để điền">
+                                💰 Vàng/Tài chính
+                            </button>
+                        </div>
+                        <div class="text-[10px] text-gray-400">
+                            💡 Gợi ý: Sửa trong URL tham số <code class="bg-gray-100 px-1 rounded text-gray-600">q=</code> để theo dõi chủ đề bạn quan tâm.
+                        </div>
+                    </div>
+
+
+                    <!-- 更多参考 -->
+                    <div class="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-book-open text-purple-500"></i>
+                            <span class="font-bold text-gray-700" data-i18n="rssModal.moreRef">Thêm nguồn RSS tham khảo</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-xs">
+                             <a href="https://github.com/tuan3w/awesome-tech-rss" target="_blank" class="text-blue-600 hover:underline flex items-center bg-blue-50 px-2 py-1 rounded">
+                                <i class="fa-brands fa-github mr-1"></i>Công nghệ/Lập trình
+                            </a>
+                             <a href="https://github.com/plenaryapp/awesome-rss-feeds" target="_blank" class="text-blue-600 hover:underline flex items-center bg-blue-50 px-2 py-1 rounded">
+                                <i class="fa-brands fa-github mr-1"></i>Tin tức thế giới
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 免责声明 -->
+                    <div class="text-[10px] text-gray-400 italic leading-relaxed px-1">
+                        <i class="fa-solid fa-shield-halved mr-1 text-gray-300"></i><span data-i18n="rssModal.disclaimer">Lưu ý: Các ví dụ RSS và công cụ bên thứ ba trên được lấy từ Internet. Nhà phát triển chưa xác minh khả năng hoạt động lâu dài. Hãy kiểm tra trước khi dùng.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeRssModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg" data-i18n="common.cancel">Hủy</button>
+                <button onclick="confirmAddRss()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" data-i18n="common.add">Thêm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 平台添加弹窗 -->
+    <div id="platform-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-layer-group mr-2 text-green-600"></i><span data-i18n="platModal.title">Thêm nền tảng tin nổi bật</span></h3>
+                <button onclick="closePlatformModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+
+            <!-- 标签页切换 -->
+            <div class="flex border-b border-gray-200 mb-4">
+                <button onclick="switchPlatformTab('select')" id="tab-platform-select" class="flex-1 py-2 text-sm font-bold text-blue-600 border-b-2 border-blue-600 transition-colors">
+                    <i class="fa-solid fa-list mr-1"></i><span data-i18n="platModal.selectPreset">Chọn mẫu có sẵn</span>
+                </button>
+                <button onclick="switchPlatformTab('custom')" id="tab-platform-custom" class="flex-1 py-2 text-sm font-bold text-gray-500 border-b-2 border-transparent hover:text-gray-700 transition-colors">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i><span data-i18n="platModal.manualInput">Nhập thủ công</span>
+                </button>
+            </div>
+
+            <!-- 1. 选择预设平台 -->
+            <div id="platform-select-panel" class="space-y-4">
+                <div id="available-platforms-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    <!-- 动态生成可用平台 -->
+                </div>
+                <div id="no-platforms-tip" class="hidden text-center py-6 text-gray-500 text-sm bg-gray-50 rounded">
+                    <i class="fa-solid fa-check-circle text-green-500 mr-2"></i><span data-i18n="platModal.allAdded">Đã thêm tất cả nền tảng có sẵn</span>
+                </div>
+            </div>
+
+            <!-- 2. 手动输入平台 -->
+            <div id="platform-custom-panel" class="hidden space-y-4">
+                <div class="bg-blue-50 border border-blue-100 rounded p-3 mb-3 text-xs text-blue-800">
+                    <i class="fa-solid fa-info-circle mr-1"></i><span data-i18n="platModal.customNote">Nền tảng tùy chỉnh cần bộ thu thập dữ liệu phía máy chủ hỗ trợ. Mục này chỉ khai báo cấu hình.</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="platModal.keyLabel">Mã nền tảng (chữ và số)</label>
+                    <input type="text" id="custom-platform-key" placeholder="ví dụ: sspai" data-i18n-placeholder="platModal.keyPlaceholder" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="platModal.nameLabel">Tên hiển thị</label>
+                    <input type="text" id="custom-platform-name" placeholder="ví dụ: Sspai" data-i18n-placeholder="platModal.namePlaceholder" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closePlatformModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg" data-i18n="common.cancel">Hủy</button>
+                <button onclick="confirmAddPlatform()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" data-i18n="common.add">Thêm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 词组类型选择弹窗 -->
+    <div id="wordgroup-type-modal" class="modal-overlay hidden">
+        <div class="modal-content max-w-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-layer-group mr-2 text-blue-500"></i><span data-i18n="wgModal.title">Chọn loại nhóm từ khóa</span></h3>
+                <button onclick="closeWordGroupTypeModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="space-y-3">
+                <!-- 组别名类型 -->
+                <div onclick="confirmAddWordGroup('group')" class="cursor-pointer border-2 border-orange-200 bg-orange-50 rounded-lg p-4 hover:border-orange-400 hover:bg-orange-100 transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs bg-orange-500 text-white px-2 py-1 rounded font-bold" data-i18n="wgModal.groupAlias">Tên đại diện của nhóm</span>
+                        <span class="font-bold text-gray-800" data-i18n="wgModal.groupAliasDesc">Nhóm nhiều từ khóa (khuyên dùng)</span>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-600">
+                        <div class="font-mono bg-white rounded p-2 text-xs border border-orange-200">
+                            <div class="text-orange-600">[Đông Á]</div>
+                            <div>Nhật Bản</div>
+                            <div>Hàn Quốc</div>
+                            <div>Triều Tiên</div>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500">
+                            <i class="fa-solid fa-check-circle text-orange-500 mr-1"></i><span data-i18n="wgModal.groupAliasUse">Dùng để: gộp nhiều từ khóa dưới một tên hiển thị</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 单个别名类型 -->
+                <div onclick="confirmAddWordGroup('alias')" class="cursor-pointer border-2 border-teal-200 bg-teal-50 rounded-lg p-4 hover:border-teal-400 hover:bg-teal-100 transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs bg-teal-500 text-white px-2 py-1 rounded font-bold" data-i18n="wgModal.singleAlias">Tên đại diện đơn</span>
+                        <span class="font-bold text-gray-800" data-i18n="wgModal.singleAliasDesc">Biểu thức chính quy/từ khóa + tên đại diện</span>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-600">
+                        <div class="font-mono bg-white rounded p-2 text-xs border border-teal-200">
+                            <div>/Pangdonglai|Yu Donglai/ <span class="text-teal-600">=></span> Pangdonglai</div>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500">
+                            <i class="fa-solid fa-check-circle text-teal-500 mr-1"></i><span data-i18n="wgModal.singleAliasUse">Dùng để: khớp nhiều từ bằng biểu thức chính quy, hiển thị bằng một tên</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 连续别名类型 -->
+                <div onclick="confirmAddWordGroup('multi-alias')" class="cursor-pointer border-2 border-purple-200 bg-purple-50 rounded-lg p-4 hover:border-purple-400 hover:bg-purple-100 transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs bg-purple-500 text-white px-2 py-1 rounded font-bold" data-i18n="wgModal.multiAlias">Nhóm nhiều tên đại diện</span>
+                        <span class="font-bold text-gray-800" data-i18n="wgModal.multiAliasDesc">Nhiều thương hiệu/cụm từ liên quan</span>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-600">
+                        <div class="font-mono bg-white rounded p-2 text-xs border border-purple-200">
+                            <div>/AgiBot|Lingxi|Zhi Hui Jun/ <span class="text-purple-600">=></span> Robot AgiBot</div>
+                            <div>/EngineAI|EngineAI/ <span class="text-purple-600">=></span> Robot EngineAI</div>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500">
+                            <i class="fa-solid fa-check-circle text-purple-500 mr-1"></i><span data-i18n="wgModal.multiAliasUse">Dùng để: gộp các thương hiệu liên quan (<strong>không ngăn bằng dòng trống</strong>)</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 普通词组类型 -->
+                <div onclick="confirmAddWordGroup('plain')" class="cursor-pointer border-2 border-gray-200 bg-gray-50 rounded-lg p-4 hover:border-gray-400 hover:bg-gray-100 transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs bg-gray-500 text-white px-2 py-1 rounded font-bold" data-i18n="wgModal.plain">Từ khóa thông thường</span>
+                        <span class="font-bold text-gray-800" data-i18n="wgModal.plainDesc">Từ khóa đơn giản</span>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-600">
+                        <div class="font-mono bg-white rounded p-2 text-xs border border-gray-200">
+                            <div>Đăng cai Olympic</div>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500">
+                            <i class="fa-solid fa-check-circle text-gray-500 mr-1"></i><span data-i18n="wgModal.plainUse">Dùng để: một hoặc vài từ khóa thông thường</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeWordGroupTypeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg" data-i18n="common.cancel">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建调度模式弹窗 -->
+    <div id="tl-new-preset-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-calendar-plus mr-2 text-purple-600"></i><span data-i18n="tlModal.newPreset">Chế độ lịch mới</span></h3>
+                <button onclick="closeTlNewPresetModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="tlModal.presetKeyLabel">Mã chế độ</label>
+                    <input type="text" id="tl-new-preset-key" placeholder="Mã chữ và số, ví dụ: my_schedule" data-i18n-placeholder="tlModal.presetKeyPlaceholder" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm">
+                    <p class="text-[10px] text-gray-400 mt-1">Chỉ gồm chữ cái, chữ số và dấu gạch dưới, dùng làm khóa YAML</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="tlModal.nameLabel">Tên hiển thị</label>
+                    <input type="text" id="tl-new-preset-name" placeholder="ví dụ: Lịch của tôi" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="tlModal.descLabel">Mô tả (tùy chọn)</label>
+                    <input type="text" id="tl-new-preset-desc" placeholder="Mô tả ngắn mục đích của chế độ" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="tlModal.templateLabel">Dựa trên mẫu</label>
+                    <select id="tl-new-preset-template" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm">
+                        <option value="">Mẫu trống (chỉ thu thập, không gửi/phân tích)</option>
+                    </select>
+                    <p class="text-[10px] text-gray-400 mt-1">Sao chép cấu hình từ chế độ hiện có để bắt đầu</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeTlNewPresetModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg" data-i18n="common.cancel">Hủy</button>
+                <button onclick="confirmTlNewPreset()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700" data-i18n="tlModal.create">Tạo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增时间段弹窗 -->
+    <div id="tl-new-period-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-clock-rotate-left mr-2 text-blue-600"></i><span data-i18n="tlModal.newPeriod">Khung giờ mới</span></h3>
+                <button onclick="closeTlNewPeriodModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="tlModal.periodKeyLabel">Mã khung giờ</label>
+                    <input type="text" id="tl-new-period-key" placeholder="Mã chữ và số, ví dụ: morning_push" data-i18n-placeholder="tlModal.periodKeyPlaceholder" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    <p class="text-[10px] text-gray-400 mt-1">Chỉ gồm chữ cái, chữ số và dấu gạch dưới</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="tlModal.nameLabel">Tên hiển thị</label>
+                    <input type="text" id="tl-new-period-name" placeholder="ví dụ: Thông báo buổi sáng" data-i18n-placeholder="tlModal.periodNamePlaceholder" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="tlModal.startTime">Giờ bắt đầu</label>
+                        <input type="time" id="tl-new-period-start" value="09:00" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1" data-i18n="tlModal.endTime">Giờ kết thúc</label>
+                        <input type="time" id="tl-new-period-end" value="11:00" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    </div>
+                </div>
+                <div class="bg-blue-50 border border-blue-100 rounded p-3 text-xs text-blue-700">
+                    <i class="fa-solid fa-info-circle mr-1"></i><span data-i18n="tlModal.crossMidnight">Nếu giờ bắt đầu > giờ kết thúc (ví dụ: 22:00–01:00), khung giờ sẽ kéo dài qua nửa đêm.</span>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeTlNewPeriodModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg" data-i18n="common.cancel">Hủy</button>
+                <button onclick="confirmTlNewPeriod()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" data-i18n="common.add">Thêm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./assets/i18n.js"></script>
+    <script src="./assets/script.js"></script>
+</body>
+</html>
