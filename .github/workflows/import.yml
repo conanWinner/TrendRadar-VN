@@ -24,7 +24,7 @@ jobs:
           git init -b master
           git config user.name "conanWinner"
           git config user.email "doanquangthangqt04@gmail.com"
-          git add .
+          git add . ':!.github/workflows/**'
           git commit -m "feat: import TrendRadar Vietnamese workspace"
           git remote add destination "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push destination master
